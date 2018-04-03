@@ -26,7 +26,7 @@ import org.rocksdb.RocksIterator;
 import com.mashape.unirest.http.exceptions.UnirestException;
 
 import Communities.GraphViz;
-import RocksDB.RocksDBFunctions;
+import RocksDB.MyRocksDB;
 
 public class DatasetsRelations {
 
@@ -42,7 +42,7 @@ public class DatasetsRelations {
 	private static RocksDB ROCKS_DB_Dataset_Size = null;
 	private static RocksDB ROCKS_DB_Dataset_Relations = null;
 	private static RocksDB ROCKS_DB_Dataset_Edges= null;
-	public static RocksDBFunctions MyDB;
+	public static MyRocksDB MyDB;
 	public String graphOutput;
 
 
@@ -54,7 +54,7 @@ public class DatasetsRelations {
 		this.graphOutput = graphOutput;
 		this.baseURL = baseURL;
 		this.identityClosureID = identityClosureID;
-		MyDB = new RocksDBFunctions("data/Datasets_Relations/");
+		MyDB = new MyRocksDB("data/Datasets_Relations/");
 		//MyDB.deleteRocksDB();
 		//MyDB.openRocksDB();
 		ROCKS_DB_Dataset_Size = MyDB.opendb("ROCKS_DB_Dataset_Size");

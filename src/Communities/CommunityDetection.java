@@ -8,36 +8,217 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.sql.SQLException;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Map.Entry;
 import java.util.TreeMap;
-
-import Client.IdentityClosureExplicitGraph;
+import Client.EqualitySet;
 
 public class CommunityDetection {
 
-	public String identityClosureID;
+	public String equalitySetID;
 	public String[] inputs;
 
 
-	public CommunityDetection(String[] inputs, IdentityClosureExplicitGraph ICG) throws IOException
+	public CommunityDetection(String[] inputs, EqualitySet EqSet, File equalitySetFile, File f, TreeMap<Float, Integer> allErrValues) throws IOException
 	{
-		this.inputs = inputs;
-		HashMap<Integer, Integer> clustersInternalEdges = new HashMap<>();
-		ModularityOptimizer mo = new ModularityOptimizer(inputs);
-		mo.identityClosureID = this.identityClosureID;
+		if(EqSet.URItoID.size() == 2)
+		{
+			float errValue;
+			int w = 1;
+			if(EqSet.statementsCounter == 1)
+			{
+				errValue = (float) 0.5;
+			}
+			else
+			{
+				errValue = 0;
+				w = 2;
+			}
+			//saveErroneousValue(allErrValues, errValue, w);
+			try(FileWriter fw = new FileWriter(f, true);
+					BufferedWriter bw = new BufferedWriter(fw);)
+			{
+				bw.write(EqSet.URItoID.firstKey() + " " + EqSet.URItoID.lastKey()
+				+ " " + errValue + " " + w + " "  
+				+ EqSet.equalitySetID + " 0\n");
+			}
+		}
+		else
+		{
+			this.inputs = inputs;
+			this.equalitySetID = EqSet.equalitySetID;
+			ModularityOptimizer mo = new ModularityOptimizer(inputs);
+			mo.identityClosureID = this.equalitySetID;
 
-		//File bla = new File("data/test.txt");
+			Clustering cl = mo.detectCommunities(EqSet, equalitySetFile); // execute community detection algorithm
+			HashMap<Integer, ArrayList<Integer>> clusters = mo.returnClusters(cl); // returns the list of clusters
+			HashMap<Integer, Integer> termsToClusters = mo.assignTermsToClusters(clusters);
+			classifyEdges(f, EqSet, clusters, termsToClusters, allErrValues);
+		}
 
-		Clustering cl = mo.detectCommunities(ICG.f); // execute community detection algorithm
-		HashMap<Integer, ArrayList<Integer>> clusters = mo.returnClusters(cl); // returns the list of clusters
+		//System.out.println("DONE");
+
+		//HashMap<Integer, Integer> termsToClusters = mo.writeClusters(EqSet.IDtoURI, mo.outputFileName, clusters); // write the clusters on a .txt file
+		//constructSameAsNetwork(equalitySetFile, "data/Communities-Graph.dot", EqSet.identityClosureID, clusters, termsToClusters, EqSet.IDtoURI);
+		//writeSVG("data/Communities-Graph.dot");
+
+		/*HashMap<Integer, ArrayList<Integer>> clusters = mo.returnClusters(cl); // returns the list of clusters
 		HashMap<Integer, Integer> termsToClusters = mo.writeClusters(ICG.IDtoURI, mo.outputFileName, clusters); // write the clusters on a .txt file
 		constructSameAsNetwork(ICG.f, "data/Communities-Graph.dot", ICG.identityClosureID, clusters, termsToClusters, ICG.IDtoURI);
 		//constructTheCommunitiesGraph(ICG.f, "data/Communities-Graph.dot", ICG.identityClosureID, clusters, termsToClusters, ICG.IDtoURI);
 		//HashMap<String, GraphEdge> edges = collectEdges(f, termsToClusters, ICG.IDtoURI, clustersInternalEdges); // returns the list of edges between the clusters
 		//constructCommunitiesGraph("data/Communities-Graph.dot", "data/Edges.txt", edges); // write the edges between the clusters on a .txt file and write the .dot file 
-		writeSVG("data/Communities-Graph.dot");
+		writeSVG("data/Communities-Graph.dot");*/
 	}
+
+
+	public void classifyEdges(File f,
+			EqualitySet EqSet,
+			HashMap<Integer, ArrayList<Integer>> clusters, 
+			HashMap<Integer, Integer> termsToClusters,
+			TreeMap<Float, Integer> allErrValues)
+	{
+		try(FileWriter fw = new FileWriter(f, true);
+				BufferedWriter bw = new BufferedWriter(fw);)
+		{
+			HashMap<Integer, Integer> intraCommEdges = new HashMap<>();
+			TreeMap<String, Integer> interCommEdges = new TreeMap<>();
+			TreeMap<Integer, Float> measureValuesIntra = new TreeMap<>();
+			TreeMap<String, Float> measureValuesInter = new TreeMap<>();
+			String[] splittedLine;
+			int n1, n2, w;
+			for(Entry<String, Integer> thisEdge : EqSet.edges.entrySet())
+			{
+				splittedLine = thisEdge.getKey().split("\t");
+				n1 = Integer.parseInt(splittedLine[0]);
+				n2 = Integer.parseInt(splittedLine[1]);     
+				w = thisEdge.getValue();
+				int c1 = termsToClusters.get(n1);
+				int c2 = termsToClusters.get(n2);
+				if(c1 == c2)
+				{
+					if(intraCommEdges.containsKey(c1))
+					{
+						intraCommEdges.put(c1, intraCommEdges.get(c1)+w);
+					}
+					else
+					{
+						intraCommEdges.put(c1, w);
+					}
+				}
+				else
+				{
+					String interCommunityKey = c1+"-"+c2;
+					if(c2 < c1)
+					{
+						interCommunityKey = c2+"-"+c1;
+					}
+					if(interCommEdges.containsKey(interCommunityKey))
+					{
+						interCommEdges.put(interCommunityKey, interCommEdges.get(interCommunityKey)+w);
+					}
+					else
+					{
+						interCommEdges.put(interCommunityKey, w);
+					}
+				}
+			}
+
+			// Intra-Links Ranking
+			for(Entry<Integer, ArrayList<Integer>> cluster: clusters.entrySet())
+			{
+				int E_in = 0;
+				int clusterID = cluster.getKey();
+				if(intraCommEdges.containsKey(clusterID))
+				{
+					E_in = intraCommEdges.get(clusterID);
+				}
+				float C = cluster.getValue().size();
+				float err = 1 - (E_in /(C*(C-1)));
+				measureValuesIntra.put(clusterID, err);
+			}
+
+			// Inter-Links Ranking
+			for(Entry<String, Integer> interCommEdge: interCommEdges.entrySet())
+			{
+				int E_ex = interCommEdge.getValue();
+				String[] linkedCommunities = interCommEdge.getKey().split("-");
+				float C1 = clusters.get(Integer.parseInt(linkedCommunities[0])).size();
+				float C2 = clusters.get(Integer.parseInt(linkedCommunities[1])).size();
+				float err = 1 - (E_ex /(2*C1*C2));
+				measureValuesInter.put(interCommEdge.getKey(), err);
+			}
+			for(Entry<String, Integer> thisEdge : EqSet.edges.entrySet())
+			{
+				splittedLine = thisEdge.getKey().split("\t");
+				n1 = Integer.parseInt(splittedLine[0]);
+				n2 = Integer.parseInt(splittedLine[1]);     
+				w = thisEdge.getValue();
+				int c1 = termsToClusters.get(n1);
+				int c2 = termsToClusters.get(n2);
+				float errValue, roundedValue;
+				if(c1 == c2)
+				{
+					errValue = measureValuesIntra.get(c1) / w ;
+					roundedValue = (float) (Math.round(errValue*100.0)/100.0);
+					//saveErroneousValue(allErrValues, errValue, w);
+					try {
+						bw.write(EqSet.IDtoURI.get(n1) + " " + EqSet.IDtoURI.get(n2) 
+						+ " " + roundedValue + " " + w + " " 
+						+ equalitySetID + " " + c1 + "\n");
+					} catch (IOException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+				}
+				else
+				{
+					String clusterID;
+					if(c1 < c2)
+					{
+						clusterID = c1+"-"+c2;
+					}
+					else
+					{
+						clusterID = c2+"-"+c1;
+					}
+					errValue = measureValuesInter.get(clusterID) / w;
+					roundedValue = (float) (Math.round(errValue*100.0)/100.0);
+					//saveErroneousValue(allErrValues, errValue, w);
+					try {
+						bw.write(EqSet.IDtoURI.get(n1) + " " + EqSet.IDtoURI.get(n2) 
+						+ " " + roundedValue + " " + w + " " 
+						+ equalitySetID + " " + clusterID + "\n");
+					} catch (IOException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+				}
+			}
+		} catch (IOException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+	}
+
+
+	public void saveErroneousValue(TreeMap<Float, Integer> allErrValues, float errValue, int weight)
+	{
+		float roundedValue = (float) (Math.round(errValue*100.0)/100.0);
+		if(allErrValues.containsKey(roundedValue))
+		{
+			int number = allErrValues.get(roundedValue);
+			allErrValues.put(roundedValue, number+weight);
+		}
+		else
+		{
+			allErrValues.put(roundedValue, weight);
+		}
+	}
+
 
 	public HashMap<Integer, String> indexTerms(HashMap<String, Integer> URItoID)
 	{
@@ -163,7 +344,7 @@ public class CommunityDetection {
 				{
 					String uri = IDtoURI.get(termID).replaceAll("\"", "") ;
 					out.println(termID + " [label=\"" + uri 
-					+"\", community=\"" + clusterID + "\"];");
+							+"\", community=\"" + clusterID + "\"];");
 					//out.println(termID + " [label=\"" + IDtoURI.get(termID) +"\"];");
 				}
 			}

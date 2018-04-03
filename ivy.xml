@@ -28,6 +28,7 @@
 		<dependency org="com.mashape.unirest" name="unirest-java" rev="1.4.9"/>
 		<dependency org="org.apache.jena" name="jena-core" rev="3.4.0"/>
 		<dependency org="org.apache.jena" name="jena-tdb" rev="3.4.0"/>
+		<dependency org="com.github.mpkorstanje" name="simmetrics-core" rev="4.1.0"/>
 		<dependency org="org.rocksdb" name="rocksdbjni" rev="5.5.1"/>	
 	</dependencies>
 	

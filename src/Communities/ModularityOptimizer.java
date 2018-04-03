@@ -23,8 +23,13 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 import java.util.TreeMap;
+import java.util.Map.Entry;
+
+import javax.swing.text.html.parser.Entity;
 
 import org.rocksdb.RocksDB;
+
+import Client.EqualitySet;
 
 public class ModularityOptimizer {
 	boolean printOutput, update;
@@ -41,7 +46,7 @@ public class ModularityOptimizer {
 	private static RocksDB ROCKS_DB_ID2Communities = null;
 	private static RocksDB ROCKS_DB_Community2Terms = null;
 	private static RocksDB ROCKS_DB_Term2Community = null;
-	public static RocksDBFunctions MyDB;
+	public static MyRocksDB MyDB;
 
 	public ModularityOptimizer(String[] args)
 	{      
@@ -53,31 +58,31 @@ public class ModularityOptimizer {
 		nIterations = Integer.parseInt(args[5]);
 		randomSeed = Long.parseLong(args[6]);
 		printOutput = (Integer.parseInt(args[7]) > 0);
-		MyDB = new RocksDBFunctions("data/Communities/");
+		/*MyDB = new MyRocksDB("data/Communities/");
 		MyDB.deleteRocksDB();
 		MyDB.openRocksDB();
 		ROCKS_DB_ID2Communities = MyDB.opendb("ROCKS_DB_ID2Communities");
 		ROCKS_DB_Community2Terms = MyDB.opendb("ROCKS_DB_Community2Terms");
-		ROCKS_DB_Term2Community = MyDB.opendb("ROCKS_DB_Term2Community");
+		ROCKS_DB_Term2Community = MyDB.opendb("ROCKS_DB_Term2Community");*/
 	}
 
 
-	public Clustering detectCommunities(File inputFile) throws IOException
+	public Clustering detectCommunities(EqualitySet EqSet, File inputFile) throws IOException
 	{
 
-		System.out.println("Reading input file...");
-		System.out.println();
+		//System.out.println("Reading input file...");
+		//System.out.println();
 
 		//sortFile(inputFile);
 		
 		
-		network = readInputFile(inputFile, modularityFunction);
+		network = readInputFile(inputFile, EqSet, modularityFunction);
 
-		System.out.format("Number of nodes: %d%n", network.getNNodes());
-		System.out.format("Number of edges: %d%n", network.getNEdges());
-		System.out.println();
-		System.out.println("Running " + ((algorithm == 1) ? "Louvain algorithm" : ((algorithm == 2) ? "Louvain algorithm with multilevel refinement" : "smart local moving algorithm")) + "...");
-		System.out.println();
+		//System.out.format("Number of nodes: %d%n", network.getNNodes());
+		//System.out.format("Number of edges: %d%n", network.getNEdges());
+		//System.out.println();
+		//System.out.println("Running " + ((algorithm == 1) ? "Louvain algorithm" : ((algorithm == 2) ? "Louvain algorithm with multilevel refinement" : "smart local moving algorithm")) + "...");
+		//System.out.println();
 
 		resolution2 = ((modularityFunction == 1) ? (resolution / (2 * network.getTotalEdgeWeight() + network.totalEdgeWeightSelfLinks)) : resolution);
 
@@ -166,32 +171,43 @@ public class ModularityOptimizer {
 		Collections.sort(lineList);		
 	}
 
-	private static Network readInputFile(File f, int modularityFunction) throws IOException
+	private static Network readInputFile(File f, EqualitySet EqSet, int modularityFunction) throws IOException
 	{
 		BufferedReader bufferedReader;
 		double[] edgeWeight1, edgeWeight2, nodeWeight;
-		int i, j, nEdges, nLines, nNodes;
+		int i, j=0, nEdges, nLines=0, nNodes;
 		int[] firstNeighborIndex, neighbor, nNeighbors, node1, node2;
 		Network network;
 		String[] splittedLine;
-
-		bufferedReader = new BufferedReader(new FileReader(f));
-
+		
+		
+		nLines = EqSet.edges.size();	
+		/*bufferedReader = new BufferedReader(new FileReader(f));
 		nLines = 0;
 		while (bufferedReader.readLine() != null)
 		{
 			nLines++;
 		}
-
-
-		bufferedReader.close();
-
-		bufferedReader = new BufferedReader(new FileReader(f));
-
+		bufferedReader.close();*/
+		
 		node1 = new int[nLines];
 		node2 = new int[nLines];
 		edgeWeight1 = new double[nLines];
 		i = -1;
+		for (Entry<String, Integer> edge : EqSet.edges.entrySet())
+		{
+			splittedLine = edge.getKey().split("\t");
+			node1[j] = Integer.parseInt(splittedLine[0]);
+			if (node1[j] > i)
+				i = node1[j];
+			node2[j] = Integer.parseInt(splittedLine[1]);
+			if (node2[j] > i)
+				i = node2[j];
+			edgeWeight1[j] = edge.getValue();
+			j++;
+		}
+		nNodes = i + 1;
+		/*bufferedReader = new BufferedReader(new FileReader(f));
 		for (j = 0; j < nLines; j++)
 		{
 			splittedLine = bufferedReader.readLine().split("\t");
@@ -204,8 +220,7 @@ public class ModularityOptimizer {
 			edgeWeight1[j] = (splittedLine.length > 2) ? Double.parseDouble(splittedLine[2]) : 1;
 		}
 		nNodes = i + 1;
-
-		bufferedReader.close();
+		bufferedReader.close();*/
 
 		nNeighbors = new int[nNodes];
 		for (i = 0; i < nLines; i++)
@@ -276,6 +291,19 @@ public class ModularityOptimizer {
 		}
 		//bufferedWriter.close();
 		return clusters;
+	}
+	
+	public HashMap<Integer, Integer> assignTermsToClusters(HashMap<Integer, ArrayList<Integer>> clusters)
+	{
+		HashMap<Integer, Integer> termsToClusters = new HashMap<>();
+		for(Entry<Integer, ArrayList<Integer>> entry : clusters.entrySet())
+		{
+			for(Integer termID : entry.getValue())
+			{
+				termsToClusters.put(termID, entry.getKey());
+			}
+		}
+		return termsToClusters;
 	}
 
 	public HashMap<Integer, Integer> writeClusters(TreeMap<Integer, String> hmp, String fileName,  HashMap<Integer, ArrayList<Integer>> clusters) throws IOException
