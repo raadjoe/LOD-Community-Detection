@@ -41,9 +41,16 @@ public class MainFunction {
 		//String identityClosureID = "41204263";
 		//String identityClosureID = "4073"; // biggest identity closure
 		//String identityClosureID = "41182339"; // a small identity closure
-		String resultsPath = "data/links-score.tsv";
+		
+		//Local Paths:
+		/*String resultsPath = "data/links-score.tsv";
 		String identitySetsPath = "../Identity-Sets/sameAs-implicit/id_terms.dat/id_terms.dat";
-		String explicitStatementsPath = "../Explicit-Identity-Graph/id-ext.hdt";
+		String explicitStatementsPath = "../Explicit-Identity-Graph/id-ext.hdt";*/
+		
+		//Server Paths:
+		String resultsPath = "/opt/joe-2/links-score.tsv";
+		String identitySetsPath = "/opt/joe-2/id_terms.dat";
+		String explicitStatementsPath = "/opt/joe-2/id-ext.hdt";
 		String[] inputLouvain = new String[8];
 		File f;
 		inputLouvain[0] = "data/Communities.txt"; // Output File
@@ -98,8 +105,16 @@ public class MainFunction {
 				
 				if(totalEqualitySets%100000 == 0)
 				{
+					Long endTime = System.currentTimeMillis();
+					Long totalTimeMs = (endTime - startTime) ;
+					System.out.print("Run Time: ");
+					System.out.println(String.format("%d min, %d sec", 
+							TimeUnit.MILLISECONDS.toMinutes(totalTimeMs),
+							TimeUnit.MILLISECONDS.toSeconds(totalTimeMs) - 
+							TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(totalTimeMs))));		
+					System.out.println(totalEqualitySets + " / 48.99 M equality sets");
 					System.out.println(totalStatements + " / 558.9 M statements");
-					System.out.println(totalDistinctStatements + " / 330 M statements");
+					System.out.println(totalDistinctStatements + " / 330 M distinct statements");
 					System.out.println("----------");
 				}
 				
