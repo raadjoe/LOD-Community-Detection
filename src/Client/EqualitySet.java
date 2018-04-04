@@ -9,8 +9,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
 import java.net.URISyntaxException;
-import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
 import java.util.Iterator;
 import java.util.Map.Entry;
 import java.util.Scanner;
@@ -18,20 +16,13 @@ import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.apache.jena.ext.com.google.common.base.Utf8;
 import org.apache.jena.graph.Triple;
-import org.apache.jena.iri.IRI;
-import org.apache.jena.iri.IRIFactory;
-import org.apache.jena.rdf.model.Resource;
-import org.apache.jena.rdf.model.ResourceFactory;
 import org.apache.jena.riot.Lang;
 import org.apache.jena.riot.RDFDataMgr;
 import org.json.JSONArray;
 import org.rdfhdt.hdt.exceptions.NotFoundException;
 import org.rdfhdt.hdt.hdt.HDT;
-import org.rdfhdt.hdt.hdt.HDTManager;
 import org.rdfhdt.hdt.triples.TripleString;
-import org.rdfhdt.hdt.util.string.ReplazableString;
 import org.simmetrics.StringMetric;
 import org.simmetrics.metrics.StringMetrics;
 
@@ -50,29 +41,30 @@ public class EqualitySet {
 	public static String maxResults = "page_size=" + allowedResults;
 	public TreeMap<Integer, String> IDtoURI = new TreeMap<>();
 	public TreeMap<String, Integer> URItoID = new TreeMap<>();
-	public TreeMap<String, Integer> edges = new TreeMap<>();
+	public TreeMap<Integer, TreeMap<Integer,Integer>> edges = new TreeMap<>();
 	public int statementsCounter = 0;
 	public int distinctStatementsCounter = 0;
+	public int reflexiveStatementsCounter = 0;
 	public String toTestTerm = "";
 	public String equalitySetID = "";
 
 
-	public EqualitySet(String baseURL, String identityClosureID, String fileName) throws IOException, UnirestException, URISyntaxException
+	/*public EqualitySet(String baseURL, String identityClosureID, String fileName) throws IOException, UnirestException, URISyntaxException
 	{
-		/*System.out.println("Getting the Explicit Statements of the Equality Set '" + identityClosureID + "'");
+		System.out.println("Getting the Explicit Statements of the Equality Set '" + identityClosureID + "'");
 		System.out.println("......................");
 		try {
 			f = File.createTempFile(fileName, ".txt");
 		} catch (IOException e) {
 			e.printStackTrace();
-		}*/
+		}
 		this.baseURL = baseURL;
 		this.identityClosureID = identityClosureID;
 		//readAllIdentitySets("../Identity-Sets/sameAs-implicit/id_terms.dat/id_terms.dat");
 		//HDT hdt = HDTManager.mapHDT("../Explicit-Identity-Graph/sameAs_lod", null);
 		//searchFromHDT("", "", "http://zh.dbpedia.org/resource/Template:User_%E5%85%A8%E7%9B%98%E8%A5%BF%E5%8C%96", hdt);
 		//getALLExplicitStatementsFromIdentityClosureID(this.identityClosureID, hdt);
-	}
+	}*/
 
 	public EqualitySet (String equalitySetID, String[] terms, HDT hdt)
 	{
@@ -91,29 +83,35 @@ public class EqualitySet {
 		constructExplicitIdentityGraph(terms, hdt);
 	}
 
-	public void assignID(String term, int counter)
+	public void assignID(String term, int counter, boolean removeLast)
 	{
 		//term.replaceAll("\"", "&quote;");
-		if(term.startsWith("<"))
+		if(removeLast == false)
 		{
-			term = term.substring(1);
-			term = term.substring(0, term.length()-1);
-		}	
+			if(term.startsWith("<"))
+			{
+				term = term.substring(1);
+				//term = term.substring(0, term.length()-1);
+			}
+			else
+			{
+				term = term + ">";
+			}
+		}
+		else
+		{
+			if(term.startsWith("<"))
+			{
+				term = term.substring(1);
+				term = term.substring(0, term.length()-1);
+			}
+		}
+
 		//URItoID.put("http://fa.dbpedia.org/resource/اتوماسیون_خانگیا", 200);
 		URItoID.put(term, counter);
 		IDtoURI.put(counter, term);
 	}
-	
-	// convert from internal Java String format -> UTF-8
-    public static String convertToUTF8(String s) {
-        String out = null;
-        try {
-            out = new String(s.getBytes("UTF-8"), "ISO-8859-1");
-        } catch (java.io.UnsupportedEncodingException e) {
-            return null;
-        }
-        return out;
-    }
+
 
 	// get all the explicit identity statements
 	public void getHDTexplicit(String term, int subjectId, HDT hdt) throws IOException, UnirestException, URISyntaxException
@@ -122,7 +120,7 @@ public class EqualitySet {
 		int objectID;
 		try {
 			it = hdt.search(term, "", "");
-/*			if(term.equals("http://ru.dbpedia.org/resource/Родион_Як��влевич_Малиновский"))
+			/*			if(term.equals("http://ru.dbpedia.org/resource/Родион_Як��влевич_Малиновский"))
 			{
 				System.out.println("OK1");
 			}
@@ -142,7 +140,7 @@ public class EqualitySet {
 					statementsCounter++;
 					if(subjectId==objectID)
 					{
-						//System.out.println("Reflexive Statement");
+						reflexiveStatementsCounter++;
 					}
 					else
 					{
@@ -163,12 +161,21 @@ public class EqualitySet {
 	public void constructExplicitIdentityGraph(String[] terms, HDT hdt)
 	{
 		int termsCounter = 0;
+		int size = terms.length;
 		for (String term:terms) {
-			if(termsCounter!=0)
+			//if(termsCounter!=0)
+			//{
+			if(termsCounter == size-1)
 			{
-				assignID(term, termsCounter-1);
-				//System.out.println(termsCounter-1 + ". " + term);
+				assignID(term, termsCounter, true);
 			}
+			else
+			{
+				assignID(term, termsCounter, false);
+			}
+
+			//System.out.println(termsCounter-1 + ". " + term);
+			//}
 			termsCounter++;
 		}
 
@@ -185,7 +192,7 @@ public class EqualitySet {
 				}
 				else
 				{*/
-					getHDTexplicit(entry.getValue(),entry.getKey(), hdt);
+				getHDTexplicit(entry.getValue(),entry.getKey(), hdt);
 				//}
 			} catch (IOException | UnirestException | URISyntaxException e) {
 				// TODO Auto-generated catch block
@@ -349,7 +356,7 @@ public class EqualitySet {
 		// Search pattern: Empty string means "any"	
 		Iterator<TripleString> it;	
 		//int explicitStatementsCounter =0;
-		int objectID;
+		//int objectID;
 		try {
 			it = hdt.search(subject, predicate, object);
 			while(it.hasNext()) {
@@ -403,7 +410,6 @@ public class EqualitySet {
 	public void getExplicitStatementsFromAPI(String term, int subjectId) throws IOException, URISyntaxException, UnirestException
 	{	
 		Boolean lastTerm = false;
-		int explicitStatementsCounter =0;
 		String requestURL = "";
 		long startIndex = 0;
 		int objectID;
@@ -420,7 +426,6 @@ public class EqualitySet {
 			Iterator<Triple> iti =  RDFDataMgr.createIteratorTriples(triples.getBody(), Lang.NTRIPLES,  null);			
 			while (iti.hasNext()) 
 			{
-				explicitStatementsCounter++;
 				Triple t = iti.next();
 				/*String subject = "<" + t.getSubject().toString() + ">";
 				String s = getID(subject);*/
@@ -451,22 +456,29 @@ public class EqualitySet {
 
 	public void addEdge(int one, int two)
 	{
-		String edgeID;
-		if(one < two)
+		if(one > two)
 		{
-			edgeID = one +"\t"+two;
+			int three = one;
+			one = two;
+			two = three; 
+		}
+		if(edges.containsKey(one))
+		{	
+			if(edges.get(one).containsKey(two))
+			{
+				edges.get(one).put(two, edges.get(one).get(two)+1);
+			}
+			else
+			{
+				edges.get(one).put(two, 1);
+				distinctStatementsCounter++;
+			}
 		}
 		else
 		{
-			edgeID = two +"\t"+one;
-		}
-		if(edges.containsKey(edgeID))
-		{
-			edges.put(edgeID, edges.get(edgeID)+1);
-		}
-		else
-		{
-			edges.put(edgeID, 1);
+			TreeMap<Integer, Integer> hmp = new TreeMap<>();
+			hmp.put(two, 1);
+			edges.put(one, hmp);
 			distinctStatementsCounter++;
 		}
 	}
@@ -674,8 +686,8 @@ public class EqualitySet {
 		else
 		{
 			float max=0;
+			System.out.println(this.equalitySetID);
 			int maxID=1000000;
-			String maxURI = "";
 			for(String s: URItoID.keySet())
 			{
 				StringMetric sm = StringMetrics.levenshtein();
@@ -684,7 +696,6 @@ public class EqualitySet {
 				{
 					max = res;
 					maxID = URItoID.get(s);
-					maxURI = s;
 				}
 			}	
 			//	System.out.println("Get ID: TERM NOT FOUND" + term);
@@ -694,7 +705,7 @@ public class EqualitySet {
 
 	public void writeExplicitGraph(File f)
 	{
-		try(FileWriter fw = new FileWriter(f, true);
+		/*try(FileWriter fw = new FileWriter(f, true);
 				BufferedWriter bw = new BufferedWriter(fw);
 				PrintWriter out = new PrintWriter(bw))
 		{
@@ -708,7 +719,7 @@ public class EqualitySet {
 		catch (IOException e) 
 		{			
 
-		}
+		}*/
 	}
 
 

@@ -8,8 +8,6 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.sql.SQLException;
-import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map.Entry;
@@ -20,6 +18,8 @@ public class CommunityDetection {
 
 	public String equalitySetID;
 	public String[] inputs;
+	int savedValues = 0;
+	int test = 0;
 
 
 	public CommunityDetection(String[] inputs, EqualitySet EqSet, File equalitySetFile, File f, TreeMap<Float, Integer> allErrValues) throws IOException
@@ -28,7 +28,7 @@ public class CommunityDetection {
 		{
 			float errValue;
 			int w = 1;
-			if(EqSet.statementsCounter == 1)
+			if(EqSet.statementsCounter-EqSet.reflexiveStatementsCounter == 1)
 			{
 				errValue = (float) 0.5;
 			}
@@ -75,6 +75,8 @@ public class CommunityDetection {
 	}
 
 
+
+
 	public void classifyEdges(File f,
 			EqualitySet EqSet,
 			HashMap<Integer, ArrayList<Integer>> clusters, 
@@ -90,39 +92,48 @@ public class CommunityDetection {
 			TreeMap<String, Float> measureValuesInter = new TreeMap<>();
 			String[] splittedLine;
 			int n1, n2, w;
-			for(Entry<String, Integer> thisEdge : EqSet.edges.entrySet())
+			for(Entry<Integer, TreeMap<Integer,Integer>> theFirst : EqSet.edges.entrySet())
 			{
-				splittedLine = thisEdge.getKey().split("\t");
-				n1 = Integer.parseInt(splittedLine[0]);
-				n2 = Integer.parseInt(splittedLine[1]);     
-				w = thisEdge.getValue();
-				int c1 = termsToClusters.get(n1);
-				int c2 = termsToClusters.get(n2);
-				if(c1 == c2)
+				n1 = theFirst.getKey();				
+				for(Entry<Integer,Integer> theSecond : theFirst.getValue().entrySet())
 				{
-					if(intraCommEdges.containsKey(c1))
+					n2 = theSecond.getKey();
+					w = theSecond.getValue();
+
+					/*splittedLine = thisEdge.getKey().split("\t");
+					n1 = Integer.parseInt(splittedLine[0]);
+					n2 = Integer.parseInt(splittedLine[1]);     
+					w = thisEdge.getValue();*/
+					int c1 = termsToClusters.get(n1);
+					int c2 = termsToClusters.get(n2);
+					if(c1 == c2)
 					{
-						intraCommEdges.put(c1, intraCommEdges.get(c1)+w);
+						if(intraCommEdges.containsKey(c1))
+						{
+							intraCommEdges.put(c1, intraCommEdges.get(c1)+w);
+						}
+						else
+						{
+							intraCommEdges.put(c1, w);
+						}
+
 					}
 					else
 					{
-						intraCommEdges.put(c1, w);
-					}
-				}
-				else
-				{
-					String interCommunityKey = c1+"-"+c2;
-					if(c2 < c1)
-					{
-						interCommunityKey = c2+"-"+c1;
-					}
-					if(interCommEdges.containsKey(interCommunityKey))
-					{
-						interCommEdges.put(interCommunityKey, interCommEdges.get(interCommunityKey)+w);
-					}
-					else
-					{
-						interCommEdges.put(interCommunityKey, w);
+						String interCommunityKey = c1+"-"+c2;
+						if(c2 < c1)
+						{
+							interCommunityKey = c2+"-"+c1;
+						}
+						if(interCommEdges.containsKey(interCommunityKey))
+						{
+							interCommEdges.put(interCommunityKey, interCommEdges.get(interCommunityKey)+w);
+						}
+						else
+						{
+							interCommEdges.put(interCommunityKey, w);
+						}
+
 					}
 				}
 			}
@@ -151,21 +162,22 @@ public class CommunityDetection {
 				float err = 1 - (E_ex /(2*C1*C2));
 				measureValuesInter.put(interCommEdge.getKey(), err);
 			}
-			for(Entry<String, Integer> thisEdge : EqSet.edges.entrySet())
+			for(Entry<Integer, TreeMap<Integer,Integer>> theFirst : EqSet.edges.entrySet())
 			{
-				splittedLine = thisEdge.getKey().split("\t");
-				n1 = Integer.parseInt(splittedLine[0]);
-				n2 = Integer.parseInt(splittedLine[1]);     
-				w = thisEdge.getValue();
-				int c1 = termsToClusters.get(n1);
-				int c2 = termsToClusters.get(n2);
-				float errValue, roundedValue;
-				if(c1 == c2)
+				n1 = theFirst.getKey();				
+				for(Entry<Integer,Integer> theSecond : theFirst.getValue().entrySet())
 				{
-					errValue = measureValuesIntra.get(c1) / w ;
-					roundedValue = (float) (Math.round(errValue*100.0)/100.0);
-					//saveErroneousValue(allErrValues, errValue, w);
-					try {
+					n2 = theSecond.getKey();
+					w = theSecond.getValue();
+					int c1 = termsToClusters.get(n1);
+					int c2 = termsToClusters.get(n2);
+					float errValue, roundedValue;
+					if(c1 == c2)
+					{
+						errValue = measureValuesIntra.get(c1) / w ;
+						roundedValue = (float) (Math.round(errValue*100.0)/100.0);
+						//saveErroneousValue(allErrValues, errValue, w);
+						try {
 						bw.write(EqSet.IDtoURI.get(n1) + " " + EqSet.IDtoURI.get(n2) 
 						+ " " + roundedValue + " " + w + " " 
 						+ equalitySetID + " " + c1 + "\n");
@@ -173,28 +185,29 @@ public class CommunityDetection {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
 					}
-				}
-				else
-				{
-					String clusterID;
-					if(c1 < c2)
-					{
-						clusterID = c1+"-"+c2;
 					}
 					else
 					{
-						clusterID = c2+"-"+c1;
-					}
-					errValue = measureValuesInter.get(clusterID) / w;
-					roundedValue = (float) (Math.round(errValue*100.0)/100.0);
-					//saveErroneousValue(allErrValues, errValue, w);
-					try {
+						String clusterID;
+						if(c1 < c2)
+						{
+							clusterID = c1+"-"+c2;
+						}
+						else
+						{
+							clusterID = c2+"-"+c1;
+						}
+						errValue = measureValuesInter.get(clusterID) / w;
+						roundedValue = (float) (Math.round(errValue*100.0)/100.0);
+						//saveErroneousValue(allErrValues, errValue, w);
+						try {
 						bw.write(EqSet.IDtoURI.get(n1) + " " + EqSet.IDtoURI.get(n2) 
 						+ " " + roundedValue + " " + w + " " 
 						+ equalitySetID + " " + clusterID + "\n");
 					} catch (IOException e) {
 						// TODO Auto-generated catch block
 						e.printStackTrace();
+					}
 					}
 				}
 			}
@@ -217,6 +230,7 @@ public class CommunityDetection {
 		{
 			allErrValues.put(roundedValue, weight);
 		}
+		savedValues = savedValues + weight;
 	}
 
 

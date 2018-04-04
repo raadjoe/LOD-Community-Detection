@@ -111,16 +111,11 @@ public class SampleApplication {
     INode node3 = graph.createNode(new RectD(360, 380, 80, 40));
     /////////////////////////////////////////////////////
 
-    //////////// Sample edge creation ///////////////////
-    // Creates some edges between the nodes
-    IEdge edge1 = graph.createEdge(node1, node2);
+    graph.createEdge(node1, node2);
     IEdge edge2 = graph.createEdge(node2, node3);
     /////////////////////////////////////////////////////
 
-    //////////// Using Bends ////////////////////////////
-    // Creates the first bend for edge2 at (400, 50)
-    IBend bend1 = graph.addBend(edge2, new PointD(400, 50));
-    /////////////////////////////////////////////////////
+    graph.addBend(edge2, new PointD(400, 50));
 
     //////////// Using Ports ////////////////////////////
     // Actually, edges connect "ports", not nodes directly.

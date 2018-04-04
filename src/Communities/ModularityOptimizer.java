@@ -180,9 +180,15 @@ public class ModularityOptimizer {
 		Network network;
 		String[] splittedLine;
 		
+		nLines = 0;
+		for(Entry<Integer, TreeMap<Integer,Integer>> theFirst : EqSet.edges.entrySet())
+		{
+			nLines = nLines + theFirst.getValue().size();
+		}
+
 		
-		nLines = EqSet.edges.size();	
-		/*bufferedReader = new BufferedReader(new FileReader(f));
+		/*nLines = EqSet.edges.size();	
+		bufferedReader = new BufferedReader(new FileReader(f));
 		nLines = 0;
 		while (bufferedReader.readLine() != null)
 		{
@@ -194,9 +200,29 @@ public class ModularityOptimizer {
 		node2 = new int[nLines];
 		edgeWeight1 = new double[nLines];
 		i = -1;
+		
+		
+		for(Entry<Integer, TreeMap<Integer,Integer>> theFirst : EqSet.edges.entrySet())
+		{
+			node1[j] = theFirst.getKey();
+			if (node1[j] > i)
+				i = node1[j];
+			for(Entry<Integer,Integer> theSecond : theFirst.getValue().entrySet())
+			{
+				node2[j] = theSecond.getKey();
+				if (node2[j] > i)
+					i = node2[j];
+				edgeWeight1[j] = theSecond.getValue();
+				j++;
+			}	
+		}
+		nNodes = i + 1;
+/*		
+		
+		
 		for (Entry<String, Integer> edge : EqSet.edges.entrySet())
 		{
-			splittedLine = edge.getKey().split("\t");
+			splittedLine = edge.getKey().split(".");
 			node1[j] = Integer.parseInt(splittedLine[0]);
 			if (node1[j] > i)
 				i = node1[j];
@@ -206,7 +232,7 @@ public class ModularityOptimizer {
 			edgeWeight1[j] = edge.getValue();
 			j++;
 		}
-		nNodes = i + 1;
+		nNodes = i + 1;*/
 		/*bufferedReader = new BufferedReader(new FileReader(f));
 		for (j = 0; j < nLines; j++)
 		{
