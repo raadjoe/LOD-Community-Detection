@@ -47,7 +47,9 @@ public class EqualitySet {
 	public int reflexiveStatementsCounter = 0;
 	public String toTestTerm = "";
 	public String equalitySetID = "";
-
+	public int termsCounter;
+	public String term1, term2;
+	public int term1ID, term2ID;
 
 	/*public EqualitySet(String baseURL, String identityClosureID, String fileName) throws IOException, UnirestException, URISyntaxException
 	{
@@ -66,22 +68,22 @@ public class EqualitySet {
 		//getALLExplicitStatementsFromIdentityClosureID(this.identityClosureID, hdt);
 	}*/
 
-	public EqualitySet (String equalitySetID, String[] terms, HDT hdt)
+	public EqualitySet(String equalitySetID, String[] terms, HDT hdt)
 	{
-		/*System.out.println("Getting the Explicit Statements of the Equality Set '" + equalitySetID + "'");
-		System.out.println("......................");
-		try {
-			f = File.createTempFile(fileName, ".txt");
-		} catch (IOException e) {
-			e.printStackTrace();
-		}*/
 		this.equalitySetID = equalitySetID;
-		/*if(equalitySetID.equals("34283264"))
-		{
-			System.out.println("OBSERVE");
-		}*/
+
 		constructExplicitIdentityGraph(terms, hdt);
 	}
+
+	public EqualitySet(String equalitySetID, String[] terms, HDT hdt, String term1, String term2)
+	{
+		this.equalitySetID = equalitySetID;
+		this.term1 = term1;
+		this.term2 = term2;		
+		constructExplicitIdentityGraph(terms, hdt);
+	}
+
+
 
 	public void assignID(String term, int counter, boolean removeLast)
 	{
@@ -106,10 +108,18 @@ public class EqualitySet {
 				term = term.substring(0, term.length()-1);
 			}
 		}
-
-		//URItoID.put("http://fa.dbpedia.org/resource/اتوماسیون_خانگیا", 200);
 		URItoID.put(term, counter);
 		IDtoURI.put(counter, term);
+		
+		// recall experiment
+		if(term.equals(term1))
+		{
+			term1ID = counter;
+		}
+		if(term.equals(term2))
+		{
+			term2ID = counter;
+		}		
 	}
 
 
@@ -159,12 +169,9 @@ public class EqualitySet {
 
 
 	public void constructExplicitIdentityGraph(String[] terms, HDT hdt)
-	{
-		int termsCounter = 0;
+	{		
 		int size = terms.length;
 		for (String term:terms) {
-			//if(termsCounter!=0)
-			//{
 			if(termsCounter == size-1)
 			{
 				assignID(term, termsCounter, true);
@@ -173,9 +180,6 @@ public class EqualitySet {
 			{
 				assignID(term, termsCounter, false);
 			}
-
-			//System.out.println(termsCounter-1 + ". " + term);
-			//}
 			termsCounter++;
 		}
 
@@ -698,7 +702,7 @@ public class EqualitySet {
 					maxID = URItoID.get(s);
 				}
 			}	
-			//	System.out.println("Get ID: TERM NOT FOUND" + term);
+			System.out.println("Get ID: TERM NOT FOUND " + term);
 			return maxID;
 		}
 	}

@@ -20,6 +20,15 @@ public class CommunityDetection {
 	public String[] inputs;
 	int savedValues = 0;
 	int test = 0;
+	public int numberOfCommunities = 0;
+	public int maxCommunity = 0;
+	public int minCommunity = 100000;
+	//float min = (float) 0.91;
+	//float max = (float) 1;
+	int sourceNode1 = 0;
+	int sourceNode2 = 0;
+	int errValueOfAddedNode = 99999;
+	public int intra,inter;
 
 
 	public CommunityDetection(String[] inputs, EqualitySet EqSet, File equalitySetFile, File f, TreeMap<Float, Integer> allErrValues) throws IOException
@@ -28,23 +37,32 @@ public class CommunityDetection {
 		{
 			float errValue;
 			int w = 1;
+			// TEST WITHOUT WEIGHT
+			errValue = (float) 0.5;
+			/*
 			if(EqSet.statementsCounter-EqSet.reflexiveStatementsCounter == 1)
 			{
 				errValue = (float) 0.5;
 			}
-			else
+			
+			/*else
 			{
 				errValue = 0;
 				w = 2;
-			}
-			//saveErroneousValue(allErrValues, errValue, w);
+			}*/
+
+			saveErroneousValue(allErrValues, errValue, w);
+
+/*			int nonReflexiveStatements = EqSet.statementsCounter - EqSet.reflexiveStatementsCounter;
 			try(FileWriter fw = new FileWriter(f, true);
 					BufferedWriter bw = new BufferedWriter(fw);)
 			{
-				bw.write(EqSet.URItoID.firstKey() + " " + EqSet.URItoID.lastKey()
-				+ " " + errValue + " " + w + " "  
-				+ EqSet.equalitySetID + " 0\n");
-			}
+				bw.write(EqSet.URItoID.firstKey() + "\t" + EqSet.URItoID.lastKey()
+				+ "\t" + errValue + "\t" + w + "\t"  
+				+ EqSet.equalitySetID + "\t" + nonReflexiveStatements + "\t0\n");
+			}*/
+			numberOfCommunities = 1;
+			maxCommunity = 2;
 		}
 		else
 		{
@@ -52,11 +70,32 @@ public class CommunityDetection {
 			this.equalitySetID = EqSet.equalitySetID;
 			ModularityOptimizer mo = new ModularityOptimizer(inputs);
 			mo.identityClosureID = this.equalitySetID;
-
 			Clustering cl = mo.detectCommunities(EqSet, equalitySetFile); // execute community detection algorithm
 			HashMap<Integer, ArrayList<Integer>> clusters = mo.returnClusters(cl); // returns the list of clusters
+			numberOfCommunities = clusters.size();
+			/*			if(numberOfCommunities > 1)
+			{*/
+			for(Entry<Integer, ArrayList<Integer>> clusterEntry : clusters.entrySet())
+			{
+				if(clusterEntry.getValue().size()> maxCommunity)
+				{
+					maxCommunity = clusterEntry.getValue().size();
+				}
+				/*if(clusterEntry.getValue().size()< minCommunity)
+					{
+						minCommunity = clusterEntry.getValue().size();
+					}*/
+			}
 			HashMap<Integer, Integer> termsToClusters = mo.assignTermsToClusters(clusters);
 			classifyEdges(f, EqSet, clusters, termsToClusters, allErrValues);
+			/*			}
+			else
+			{
+				System.out.println("Test");
+			}*/
+			//writeCommunities(clusters, EqSet.IDtoURI);
+			//HashMap<String, GraphEdge> edges = collectEdges(f, termsToClusters, EqSet.IDtoURI, clustersInternalEdges); // returns the list of edges between the clusters
+			//constructCommunitiesGraph("data/Communities-Graph.dot", "data/Edges.txt", edges); // write the edges between the clusters on a .txt file and write the .dot file 
 		}
 
 		//System.out.println("DONE");
@@ -74,8 +113,119 @@ public class CommunityDetection {
 		writeSVG("data/Communities-Graph.dot");*/
 	}
 
+/*	public CommunityDetection(String[] inputs, EqualitySet EqSet, File equalitySetFile, File f, TreeMap<Float, Integer> allErrValues, Boolean test) throws IOException
+	{
+		this.intra =0;
+		this.inter =0;
+		if(EqSet.URItoID.size() == 2)
+		{
+			float errValue;
+			int w = 1;
+			if(EqSet.statementsCounter-EqSet.reflexiveStatementsCounter == 1)
+			{
+				errValue = (float) 0.5;
+			}
+			else
+			{
+				errValue = 0;
+				w = 2;
+			}
 
+			if(errValue >= 0.99)
+			{
+				this.intra = intra + w;
+				saveErroneousValue(allErrValues, EqSet.URItoID.size(), w);
+			}
+		}
+		else
+		{
+			this.inputs = inputs;
+			this.equalitySetID = EqSet.equalitySetID;
+			ModularityOptimizer mo = new ModularityOptimizer(inputs);
+			mo.identityClosureID = this.equalitySetID;
+			Clustering cl = mo.detectCommunities(EqSet, equalitySetFile); // execute community detection algorithm
+			HashMap<Integer, ArrayList<Integer>> clusters = mo.returnClusters(cl); // returns the list of clusters
+			numberOfCommunities = clusters.size();
+			if(numberOfCommunities > 1)
+			{
+				for(Entry<Integer, ArrayList<Integer>> clusterEntry : clusters.entrySet())
+				{
+					if(clusterEntry.getValue().size()> maxCommunity)
+					{
+						maxCommunity = clusterEntry.getValue().size();
+					}
+					if(clusterEntry.getValue().size()< minCommunity)
+					{
+						minCommunity = clusterEntry.getValue().size();
+					}
+				}
+				HashMap<Integer, Integer> termsToClusters = mo.assignTermsToClusters(clusters);
+				classifyEdges(f, EqSet, clusters, termsToClusters, allErrValues);
+			}
+			//writeCommunities(clusters, EqSet.IDtoURI);
+			//HashMap<String, GraphEdge> edges = collectEdges(f, termsToClusters, EqSet.IDtoURI, clustersInternalEdges); // returns the list of edges between the clusters
+			//constructCommunitiesGraph("data/Communities-Graph.dot", "data/Edges.txt", edges); // write the edges between the clusters on a .txt file and write the .dot file 
+		}
 
+	}
+
+	public CommunityDetection(String[] inputs, EqualitySet EqSet, File equalitySetFile, File f, TreeMap<Float, Integer> allErrValues, int t1, int t2) throws IOException
+	{
+		this.sourceNode1 = t1;
+		this.sourceNode2 = t2;
+		if(EqSet.URItoID.size() == 2)
+		{
+			float errValue;
+			int w = 1;
+			if(EqSet.statementsCounter-EqSet.reflexiveStatementsCounter == 1)
+			{
+				errValue = (float) 0.5;
+			}
+			else
+			{
+				errValue = 0;
+				w = 2;
+			}
+			//saveErroneousValue(allErrValues, errValue, w);
+
+			int bla = EqSet.statementsCounter - EqSet.reflexiveStatementsCounter;
+			try(FileWriter fw = new FileWriter(f, true);
+					BufferedWriter bw = new BufferedWriter(fw);)
+			{
+				bw.write(EqSet.URItoID.firstKey() + " " + EqSet.URItoID.lastKey()
+				+ " " + errValue + " " + w + " "  
+				+ EqSet.equalitySetID + " " + bla + " 0\n");
+			}
+			numberOfCommunities = 1;
+			maxCommunity = 2;
+		}
+		else
+		{
+			this.inputs = inputs;
+			this.equalitySetID = EqSet.equalitySetID;
+			ModularityOptimizer mo = new ModularityOptimizer(inputs);
+			mo.identityClosureID = this.equalitySetID;
+			Clustering cl = mo.detectCommunities(EqSet, equalitySetFile); // execute community detection algorithm
+			HashMap<Integer, ArrayList<Integer>> clusters = mo.returnClusters(cl); // returns the list of clusters
+			numberOfCommunities = clusters.size();
+			if(numberOfCommunities > 1)
+			{
+				for(Entry<Integer, ArrayList<Integer>> clusterEntry : clusters.entrySet())
+				{
+					if(clusterEntry.getValue().size()> maxCommunity)
+					{
+						maxCommunity = clusterEntry.getValue().size();
+					}
+					if(clusterEntry.getValue().size()< minCommunity)
+					{
+						minCommunity = clusterEntry.getValue().size();
+					}
+				}
+				HashMap<Integer, Integer> termsToClusters = mo.assignTermsToClusters(clusters);
+				classifyEdges(f, EqSet, clusters, termsToClusters, allErrValues);
+			}		 
+		}
+	}*/
 
 	public void classifyEdges(File f,
 			EqualitySet EqSet,
@@ -174,17 +324,48 @@ public class CommunityDetection {
 					float errValue, roundedValue;
 					if(c1 == c2)
 					{
-						errValue = measureValuesIntra.get(c1) / w ;
-						roundedValue = (float) (Math.round(errValue*100.0)/100.0);
-						//saveErroneousValue(allErrValues, errValue, w);
+						//TEST WITHOUT WEIGHT
+						errValue = measureValuesIntra.get(c1);
+						//errValue = measureValuesIntra.get(c1) / w ;
+						
+						saveErroneousValue(allErrValues, errValue, w);
+						
+						//roundedValue = (float) (Math.round(errValue*100.0)/100.0);
+						//if(roundedValue >= 0.99)
+						//{
+							//intra = intra + w;
+							//saveErroneousValue(allErrValues, EqSet.URItoID.size(), w);
+						//}
+						
+						/*int nonReflexiveStatements = EqSet.statementsCounter - EqSet.reflexiveStatementsCounter;
 						try {
-						bw.write(EqSet.IDtoURI.get(n1) + " " + EqSet.IDtoURI.get(n2) 
-						+ " " + roundedValue + " " + w + " " 
-						+ equalitySetID + " " + c1 + "\n");
-					} catch (IOException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
+							bw.write(EqSet.IDtoURI.get(n1) + "\t" + EqSet.IDtoURI.get(n2) 
+							+ "\t" + roundedValue + "\t" + w + "\t" 
+							+ equalitySetID + "\t" + nonReflexiveStatements + "\t" + c1 + "\n");
+						} catch (IOException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}*/
+						
+
+						//roundedValue = (float) (Math.round(errValue*100.0)/100.0);
+
+
+						/*// Recall Test
+						if(n1 == sourceNode1 && n2 == sourceNode2
+								|| n1 == sourceNode2 && n2 == sourceNode1)
+						{
+							System.out.println(EqSet.IDtoURI.get(n1) + " (" + n1 + ") - " + EqSet.IDtoURI.get(n2) + " (" + n2 + ") = " + roundedValue);
+							int bla = EqSet.statementsCounter - EqSet.reflexiveStatementsCounter;
+							try {
+								bw.write(EqSet.IDtoURI.get(n1) + " " + EqSet.IDtoURI.get(n2) 
+								+ " " + roundedValue + " " + w + " " 
+								+ equalitySetID + " " + bla + " " + c1 + "\n");
+							} catch (IOException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
+						}*/
 					}
 					else
 					{
@@ -197,17 +378,45 @@ public class CommunityDetection {
 						{
 							clusterID = c2+"-"+c1;
 						}
-						errValue = measureValuesInter.get(clusterID) / w;
-						roundedValue = (float) (Math.round(errValue*100.0)/100.0);
-						//saveErroneousValue(allErrValues, errValue, w);
+						//TEST WITHOUT WEIGHT
+						errValue = measureValuesInter.get(clusterID);
+						//errValue = measureValuesInter.get(clusterID) / w;
+						saveErroneousValue(allErrValues, errValue, w);
+
+						/*roundedValue = (float) (Math.round(errValue*100.0)/100.0);
+						if(roundedValue >= 0.99)
+						{
+							inter = inter + w;
+							//saveErroneousValue(allErrValues, EqSet.URItoID.size(), w);
+						}
+						int nonReflexiveStatements = EqSet.statementsCounter - EqSet.reflexiveStatementsCounter;
 						try {
-						bw.write(EqSet.IDtoURI.get(n1) + " " + EqSet.IDtoURI.get(n2) 
-						+ " " + roundedValue + " " + w + " " 
-						+ equalitySetID + " " + clusterID + "\n");
-					} catch (IOException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
+							bw.write(EqSet.IDtoURI.get(n1) + "\t" + EqSet.IDtoURI.get(n2) 
+							+ "\t" + roundedValue + "\t" + w + "\t" 
+							+ equalitySetID + "\t" + nonReflexiveStatements + "\t" + clusterID + "\n");
+						} catch (IOException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}*/
+						
+						
+
+						// Recall Test
+						/*if(n1 == sourceNode1 && n2 == sourceNode2
+								|| n1 == sourceNode2 && n2 == sourceNode1)
+						{
+							System.out.println(EqSet.IDtoURI.get(n1) + " (" + n1 + ") - " + EqSet.IDtoURI.get(n2) + " (" + n2 + ") = " + roundedValue);
+							int bla = EqSet.statementsCounter - EqSet.reflexiveStatementsCounter;
+							try {
+								bw.write(EqSet.IDtoURI.get(n1) + " " + EqSet.IDtoURI.get(n2) 
+								+ " " + roundedValue + " " + w + " " 
+								+ equalitySetID + " " + bla + " " + clusterID + "\n");
+							} catch (IOException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
+						}	*/			
+
 					}
 				}
 			}
@@ -215,6 +424,33 @@ public class CommunityDetection {
 			// TODO Auto-generated catch block
 			e1.printStackTrace();
 		}
+	}
+
+	public void writeCommunities(HashMap<Integer, ArrayList<Integer>> clusters, TreeMap<Integer, String> iDtoURI)
+	{
+		File f = openFile("data/communities.txt");
+		try(FileWriter fw = new FileWriter(f, true);
+				BufferedWriter bw = new BufferedWriter(fw);
+				PrintWriter out = new PrintWriter(bw))
+		{
+			out.println("Number of Communities " + clusters.size());
+			out.println("Number of Terms " + iDtoURI.size());
+			out.println("");
+			for(Entry<Integer, ArrayList<Integer>> thisEntry : clusters.entrySet())
+			{
+				out.println("Community " + thisEntry.getKey());
+				out.println("----------");
+				for(Integer termID : thisEntry.getValue())
+				{
+					out.println(iDtoURI.get(termID));
+				}
+				out.println("");
+			}		
+		} 
+		catch (IOException e) 
+		{
+			//exception handling left as an exercise for the reader
+		}		
 	}
 
 

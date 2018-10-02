@@ -8,9 +8,12 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.Console;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.security.MessageDigest;
@@ -74,8 +77,8 @@ public class ModularityOptimizer {
 		//System.out.println();
 
 		//sortFile(inputFile);
-		
-		
+
+
 		network = readInputFile(inputFile, EqSet, modularityFunction);
 
 		//System.out.format("Number of nodes: %d%n", network.getNNodes());
@@ -155,8 +158,8 @@ public class ModularityOptimizer {
         writeClusters(terms, clustersFileName, clusters);*/
 		return clustering;
 	}
-	
-	
+
+
 	@SuppressWarnings("unused")
 	private static void sortFile(File f) throws IOException
 	{
@@ -179,14 +182,14 @@ public class ModularityOptimizer {
 		int[] firstNeighborIndex, neighbor, nNeighbors, node1, node2;
 		Network network;
 		String[] splittedLine;
-		
+
 		nLines = 0;
 		for(Entry<Integer, TreeMap<Integer,Integer>> theFirst : EqSet.edges.entrySet())
 		{
 			nLines = nLines + theFirst.getValue().size();
 		}
 
-		
+
 		/*nLines = EqSet.edges.size();	
 		bufferedReader = new BufferedReader(new FileReader(f));
 		nLines = 0;
@@ -196,30 +199,70 @@ public class ModularityOptimizer {
 		}
 		bufferedReader.close();*/
 		
+		//nLines = 78;
 		node1 = new int[nLines];
 		node2 = new int[nLines];
 		edgeWeight1 = new double[nLines];
 		i = -1;
+
+
 		
-		
-		for(Entry<Integer, TreeMap<Integer,Integer>> theFirst : EqSet.edges.entrySet())
-		{
-			node1[j] = theFirst.getKey();
-			if (node1[j] > i)
-				i = node1[j];
-			for(Entry<Integer,Integer> theSecond : theFirst.getValue().entrySet())
+/*
+		FileInputStream  inputStream = null;
+		try {
+			try {
+				inputStream = new FileInputStream("data/karate-network.txt");
+			} catch (FileNotFoundException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			InputStreamReader isr = new InputStreamReader(inputStream);
+			BufferedReader br = new BufferedReader(isr);
+
+			for (j = 0; j < nLines; j++)
 			{
-				node2[j] = theSecond.getKey();
+				splittedLine = br.readLine().split("\t");
+				node1[j] = Integer.parseInt(splittedLine[0]);
+				if (node1[j] > i)
+					i = node1[j];
+				node2[j] = Integer.parseInt(splittedLine[1]);
 				if (node2[j] > i)
 					i = node2[j];
+				edgeWeight1[j] = (splittedLine.length > 2) ? Double.parseDouble(splittedLine[2]) : 1;
+			}
+			nNodes = 34;
+		}
+		finally {
+			if (inputStream != null) {
+				try {
+					inputStream.close();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+		}*/
+
+
+
+
+		for(Entry<Integer, TreeMap<Integer,Integer>> theFirst : EqSet.edges.entrySet())
+		{
+			for(Entry<Integer,Integer> theSecond : theFirst.getValue().entrySet())
+			{
+				node1[j] = theFirst.getKey();
+				node2[j] = theSecond.getKey();
 				edgeWeight1[j] = theSecond.getValue();
 				j++;
 			}	
 		}
-		nNodes = i + 1;
-/*		
+		nNodes = EqSet.IDtoURI.size();
 		
 		
+		
+		/*		
+
+
 		for (Entry<String, Integer> edge : EqSet.edges.entrySet())
 		{
 			splittedLine = edge.getKey().split(".");
@@ -318,7 +361,7 @@ public class ModularityOptimizer {
 		//bufferedWriter.close();
 		return clusters;
 	}
-	
+
 	public HashMap<Integer, Integer> assignTermsToClusters(HashMap<Integer, ArrayList<Integer>> clusters)
 	{
 		HashMap<Integer, Integer> termsToClusters = new HashMap<>();
