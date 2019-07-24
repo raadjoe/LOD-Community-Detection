@@ -16,20 +16,12 @@ import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.apache.jena.graph.Triple;
-import org.apache.jena.riot.Lang;
-import org.apache.jena.riot.RDFDataMgr;
-import org.json.JSONArray;
 import org.rdfhdt.hdt.exceptions.NotFoundException;
 import org.rdfhdt.hdt.hdt.HDT;
 import org.rdfhdt.hdt.triples.TripleString;
 import org.simmetrics.StringMetric;
 import org.simmetrics.metrics.StringMetrics;
 
-import com.mashape.unirest.http.HttpResponse;
-import com.mashape.unirest.http.JsonNode;
-import com.mashape.unirest.http.Unirest;
-import com.mashape.unirest.http.exceptions.UnirestException;
 
 
 public class EqualitySet {
@@ -124,7 +116,7 @@ public class EqualitySet {
 
 
 	// get all the explicit identity statements
-	public void getHDTexplicit(String term, int subjectId, HDT hdt) throws IOException, UnirestException, URISyntaxException
+	public void getHDTexplicit(String term, int subjectId, HDT hdt) throws IOException, URISyntaxException
 	{		
 		Iterator<TripleString> it;	
 		int objectID;
@@ -198,7 +190,7 @@ public class EqualitySet {
 				{*/
 				getHDTexplicit(entry.getValue(),entry.getKey(), hdt);
 				//}
-			} catch (IOException | UnirestException | URISyntaxException e) {
+			} catch (IOException  | URISyntaxException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
@@ -306,56 +298,56 @@ public class EqualitySet {
 		Unirest.shutdown();
 	}*/
 
-	// get the explicit identity statements for each term in this identity closure
-	public void getALLExplicitStatementsFromIdentityClosureID(String identityClosureID, HDT hdt) throws IOException, UnirestException, URISyntaxException
-	{	
-		Boolean lastTerm = false;
-		String requestURL = "";
-		long startIndex = 0;
-		int counter = 0;
-		while(lastTerm != true)
-		{
-			startIndex++;
-			String startAt = "page=" + startIndex;
-			requestURL = baseURL + "term" + "?" + startAt + "&" + maxResults + "&id=" + identityClosureID;
-			HttpResponse<JsonNode> jsonResponse = Unirest.get(protocol+requestURL)
-					.header("accept", "application/json;charset=ISO-8859-1")
-					.asJson();
-			lastTerm = isLastTerm(jsonResponse.getHeaders().get("Link").get(0));
-			JSONArray allobjects = jsonResponse.getBody().getArray();
-			Iterator<?> iti = allobjects.iterator();
-			while (iti.hasNext()) 
-			{
-				String term =  (String) iti.next();	
-				/*if(term.startsWith("<"))
-				{
-					term = term.substring(1);
-					if(term.endsWith(">"))
-					{
-						term = term.substring(0, term.length()-1);
-					}
-				}	*/
-				indexTerm(counter, term);
-				System.out.println("# id=" + counter + ": " + term);
-				counter++;
-				//getExplicitStatementsFromHDT(term, hdt);
-			}
-		}
-		for(Integer id : IDtoURI.keySet())
-		{
-			String uri = IDtoURI.get(id);
-			System.out.println("#" + id + " " + uri);
-			//getExplicitStatementsFromHDT(uri, id, hdt);
-			getExplicitStatementsFromAPI(IDtoURI.get(id), id);
-		}
-		//writeExplicitGraph();
-		hdt.close();
-		Unirest.shutdown();
-	}
+//	// get the explicit identity statements for each term in this identity closure
+//	public void getALLExplicitStatementsFromIdentityClosureID(String identityClosureID, HDT hdt) throws IOException, URISyntaxException
+//	{	
+//		Boolean lastTerm = false;
+//		String requestURL = "";
+//		long startIndex = 0;
+//		int counter = 0;
+//		while(lastTerm != true)
+//		{
+//			startIndex++;
+//			String startAt = "page=" + startIndex;
+//			requestURL = baseURL + "term" + "?" + startAt + "&" + maxResults + "&id=" + identityClosureID;
+//			HttpResponse<JsonNode> jsonResponse = Unirest.get(protocol+requestURL)
+//					.header("accept", "application/json;charset=ISO-8859-1")
+//					.asJson();
+//			lastTerm = isLastTerm(jsonResponse.getHeaders().get("Link").get(0));
+//			JSONArray allobjects = jsonResponse.getBody().getArray();
+//			Iterator<?> iti = allobjects.iterator();
+//			while (iti.hasNext()) 
+//			{
+//				String term =  (String) iti.next();	
+//				/*if(term.startsWith("<"))
+//				{
+//					term = term.substring(1);
+//					if(term.endsWith(">"))
+//					{
+//						term = term.substring(0, term.length()-1);
+//					}
+//				}	*/
+//				indexTerm(counter, term);
+//				System.out.println("# id=" + counter + ": " + term);
+//				counter++;
+//				//getExplicitStatementsFromHDT(term, hdt);
+//			}
+//		}
+//		for(Integer id : IDtoURI.keySet())
+//		{
+//			String uri = IDtoURI.get(id);
+//			System.out.println("#" + id + " " + uri);
+//			//getExplicitStatementsFromHDT(uri, id, hdt);
+//			getExplicitStatementsFromAPI(IDtoURI.get(id), id);
+//		}
+//		//writeExplicitGraph();
+//		hdt.close();
+//		Unirest.shutdown();
+//	}
 
 
 	// get all the explicit identity statements
-	public void searchFromHDT(String subject, String predicate, String object, HDT hdt) throws IOException, UnirestException, URISyntaxException
+	public void searchFromHDT(String subject, String predicate, String object, HDT hdt) throws IOException, URISyntaxException
 	{		
 		// Search pattern: Empty string means "any"	
 		Iterator<TripleString> it;	
@@ -376,7 +368,7 @@ public class EqualitySet {
 	}
 
 	// get all the explicit identity statements
-	public void getExplicitStatementsFromHDT(String term, int subjectId, HDT hdt) throws IOException, UnirestException, URISyntaxException
+	public void getExplicitStatementsFromHDT(String term, int subjectId, HDT hdt) throws IOException, URISyntaxException
 	{		
 		// Search pattern: Empty string means "any"	
 		Iterator<TripleString> it;	
@@ -410,53 +402,53 @@ public class EqualitySet {
 		}
 	}
 
-	// get the explicit identity statements in which this term is subject
-	public void getExplicitStatementsFromAPI(String term, int subjectId) throws IOException, URISyntaxException, UnirestException
-	{	
-		Boolean lastTerm = false;
-		String requestURL = "";
-		long startIndex = 0;
-		int objectID;
-		while(lastTerm != true)
-		{
-			startIndex++;
-			String startAt = "page=" + startIndex;
-			String encodedTerm = java.net.URLEncoder.encode(term, "UTF-8");
-			requestURL = baseURL + "triple" + "?" + startAt + "&" + maxResults + "&subject=" + encodedTerm;	
-			HttpResponse<InputStream> triples = Unirest.get(protocol+requestURL)
-					.header("accept", "application/n-triples")
-					.asBinary();
-			lastTerm = isLastTerm(triples.getHeaders().get("Link").get(0));
-			Iterator<Triple> iti =  RDFDataMgr.createIteratorTriples(triples.getBody(), Lang.NTRIPLES,  null);			
-			while (iti.hasNext()) 
-			{
-				Triple t = iti.next();
-				/*String subject = "<" + t.getSubject().toString() + ">";
-				String s = getID(subject);*/
-				String object = "<" + t.getObject().toString() + ">";
-				objectID = getID(object);
-				if(objectID != -1)
-				{
-					if(subjectId < objectID)
-					{
-						addEdge(subjectId, objectID);
-					}
-					else
-					{
-						addEdge(objectID,subjectId);
-					}
-					statementsCounter++;
-					//System.out.println(explicitStatementsCounter + "- " + term + "(" + subjectId + ") -- "  + object + "(" + objectID + ")");
-				}
-				else
-				{
-
-				}
-				//addDataToFile(f, s, o);
-
-			}
-		}
-	}
+//	// get the explicit identity statements in which this term is subject
+//	public void getExplicitStatementsFromAPI(String term, int subjectId) throws IOException, URISyntaxException
+//	{	
+//		Boolean lastTerm = false;
+//		String requestURL = "";
+//		long startIndex = 0;
+//		int objectID;
+//		while(lastTerm != true)
+//		{
+//			startIndex++;
+//			String startAt = "page=" + startIndex;
+//			String encodedTerm = java.net.URLEncoder.encode(term, "UTF-8");
+//			requestURL = baseURL + "triple" + "?" + startAt + "&" + maxResults + "&subject=" + encodedTerm;	
+//			HttpResponse<InputStream> triples = Unirest.get(protocol+requestURL)
+//					.header("accept", "application/n-triples")
+//					.asBinary();
+//			lastTerm = isLastTerm(triples.getHeaders().get("Link").get(0));
+//			Iterator<Triple> iti =  RDFDataMgr.createIteratorTriples(triples.getBody(), Lang.NTRIPLES,  null);			
+//			while (iti.hasNext()) 
+//			{
+//				Triple t = iti.next();
+//				/*String subject = "<" + t.getSubject().toString() + ">";
+//				String s = getID(subject);*/
+//				String object = "<" + t.getObject().toString() + ">";
+//				objectID = getID(object);
+//				if(objectID != -1)
+//				{
+//					if(subjectId < objectID)
+//					{
+//						addEdge(subjectId, objectID);
+//					}
+//					else
+//					{
+//						addEdge(objectID,subjectId);
+//					}
+//					statementsCounter++;
+//					//System.out.println(explicitStatementsCounter + "- " + term + "(" + subjectId + ") -- "  + object + "(" + objectID + ")");
+//				}
+//				else
+//				{
+//
+//				}
+//				//addDataToFile(f, s, o);
+//
+//			}
+//		}
+//	}
 
 	public void addEdge(int one, int two)
 	{

@@ -23,7 +23,6 @@ import org.rocksdb.RocksDB;
 import org.rocksdb.RocksDBException;
 import org.rocksdb.RocksIterator;
 
-import com.mashape.unirest.http.exceptions.UnirestException;
 
 import Communities.GraphViz;
 import RocksDB.MyRocksDB;
@@ -46,7 +45,7 @@ public class DatasetsRelations {
 	public String graphOutput;
 
 
-	public DatasetsRelations(String baseURL, String identityClosureID, String graphOutput) throws IOException, UnirestException, URISyntaxException
+	public DatasetsRelations(String baseURL, String identityClosureID, String graphOutput) throws IOException, URISyntaxException
 	{
 		System.out.println("Getting the Relations between the Datasets");
 		System.out.println("......................");
@@ -67,7 +66,7 @@ public class DatasetsRelations {
 
 
 	// get all the explicit identity statements
-	public void getALLExplicitStatementsFromHDT() throws IOException, UnirestException, URISyntaxException
+	public void getALLExplicitStatementsFromHDT() throws IOException, URISyntaxException
 	{	
 		long startTime = System.currentTimeMillis();
 		Integer totalNbStatements = 558943116;

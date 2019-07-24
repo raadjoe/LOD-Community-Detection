@@ -15,19 +15,17 @@ import java.util.Map.Entry;
 import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.commons.lang3.ArrayUtils;
 import org.rdfhdt.hdt.hdt.HDT;
 import org.rdfhdt.hdt.hdt.HDTManager;
 
 
 import Communities.CommunityDetection;
-import com.mashape.unirest.http.exceptions.UnirestException;
 
 
 
 public class MainFunction {
 
-	public static void main(String[] args) throws IOException, UnirestException, URISyntaxException{
+	public static void main(String[] args) throws IOException, URISyntaxException{
 		System.out.println("-- Program Start --" );
 		System.out.println("" );
 		long startTime = System.currentTimeMillis();
@@ -39,11 +37,15 @@ public class MainFunction {
 		//String identityClosureID = "4073"; // biggest identity closure
 		//String identityClosureID = "41182339"; // a small identity closure
 
-		//Local Paths:
-		String linksVariationPath = "data/links-score-variation-no-weight.tsv";
-		String resultsPath = "data/links-score.tsv";
-		String identitySetsPath = "../Identity-Sets/sameAs-implicit/id_terms.dat/id_terms.dat";
-		String explicitStatementsPath = "../Explicit-Identity-Graph/id-ext.hdt";
+		// Paths to save the outputs:
+		String linksVariationPath = "links-score-variation-no-weight.tsv";
+		String resultsPath = "links-score.tsv";
+		
+		// Path for the equivalence classes (the file id2terms.csv can be downloaded from https://zenodo.org/record/3345674)
+		String identitySetsPath = "../id2termstest.csv";
+		
+		// Path for the sameAs network (sameAs-Network.hdt can be downloaded from https://zenodo.org/record/1973099)
+		String explicitStatementsPath = "../sameAs-Network.hdt";
 
 		//Server Paths:
 		/*String resultsPath = "/opt/joe-2/all-sameAs-error-degrees.tsv";
@@ -61,7 +63,6 @@ public class MainFunction {
 		inputLouvain[6] = "0"; // Seed of the random number generator
 		inputLouvain[7] = "0"; // Whether or not to print output to the console (0 = no; 1 = yes)
 		TreeMap<Float, Integer> allErrValues = new TreeMap<>();
-		//new SampleApplication("Datasets_Graph");
 
 
 		int totalNumberOfCommunities = 0;
@@ -82,108 +83,6 @@ public class MainFunction {
 		FileInputStream inputStream = null;
 
 		
-		// RECALL TEST
-		
-		/*TreeMap<String, String> differentTermsURItoID = new TreeMap<>();	
-		differentTermsURItoID.put("http://ace.dbpedia.org/resource/Paris", "30639");
-		differentTermsURItoID.put("http://ace.dbpedia.org/resource/Berlin", "39036");
-		differentTermsURItoID.put("http://dbpedia.org/resource/British_Universities", "16743097");
-		differentTermsURItoID.put("http://dbpedia.org/resource/Pope_John_XXII", "31673");
-		differentTermsURItoID.put("http://dbpedia.org/resource/Rob_Marshall", "369337");
-		differentTermsURItoID.put("http://dbpedia.org/resource/Hugh_the_great", "1160633");
-		differentTermsURItoID.put("http://sco.dbpedia.org/resource/New_Zealand", "4073");
-		differentTermsURItoID.put("http://de.dbpedia.org/resource/Aquarium_(Band)", "4073");
-		differentTermsURItoID.put("http://fr.dbpedia.org/resource/Cristiano_Ronaldo", "500706");
-		differentTermsURItoID.put("http://dbpedia.org/resource/Tom_Cruise", "123635");
-		differentTermsURItoID.put("http://dbpedia.org/resource/Facebook", "4073");
-		differentTermsURItoID.put("http://dbpedia.org/resource/Chaise_longue", "540748");
-		differentTermsURItoID.put("http://dbpedia.org/resource/Samsung", "33696");
-		differentTermsURItoID.put("http://dbpedia.org/resource/Strawberry", "102191");
-		differentTermsURItoID.put("http://dbpedia.org/resource/Ruler", "538330");
-		
-		TreeMap<String, String> differentTermsIDtoURI = new TreeMap<>();		
-		differentTermsIDtoURI.put("30639", "http://ace.dbpedia.org/resource/Paris");
-		differentTermsIDtoURI.put("39036", "http://ace.dbpedia.org/resource/Berlin");
-		differentTermsIDtoURI.put("16743097", "http://dbpedia.org/resource/British_Universities" );
-		differentTermsIDtoURI.put("31673", "http://dbpedia.org/resource/Pope_John_XXII");
-		differentTermsIDtoURI.put("369337", "http://dbpedia.org/resource/Rob_Marshall");
-		differentTermsIDtoURI.put("1160633", "http://dbpedia.org/resource/Hugh_the_great");
-		differentTermsIDtoURI.put("4073", "http://sco.dbpedia.org/resource/New_Zealand");
-		differentTermsIDtoURI.put("4073", "http://de.dbpedia.org/resource/Aquarium_(Band)");
-		differentTermsIDtoURI.put("500706", "http://fr.dbpedia.org/resource/Cristiano_Ronaldo");
-		differentTermsIDtoURI.put("123635", "http://dbpedia.org/resource/Tom_Cruise");
-		differentTermsIDtoURI.put("4073", "http://dbpedia.org/resource/Facebook");
-		differentTermsIDtoURI.put("540748", "http://dbpedia.org/resource/Chaise_longue");
-		differentTermsIDtoURI.put("33696", "http://dbpedia.org/resource/Samsung");
-		differentTermsIDtoURI.put("102191", "http://dbpedia.org/resource/Strawberry");
-		differentTermsIDtoURI.put("538330", "http://dbpedia.org/resource/Ruler");
-		
-		
-		TreeMap<String, String> copyDifferentTerms = new TreeMap<>();	
-		copyDifferentTerms.putAll(differentTermsURItoID);
-		TreeMap<String, String[]> IDtoTerms = new TreeMap<>();
-		try {
-			try {
-				inputStream = new FileInputStream(identitySetsPath);
-			} catch (FileNotFoundException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-			InputStreamReader isr = new InputStreamReader(inputStream);
-			BufferedReader br = new BufferedReader(isr);
-			String thisLine = null;
-			while ((thisLine = br.readLine()) != null)
-			{
-				String[] dataArray = thisLine.split(" ", 2);					
-				String equalitySetID = dataArray[0];
-				if(differentTermsIDtoURI.containsKey(equalitySetID))
-				{
-					String[] setOfTerms = dataArray[1].split("> ");
-					IDtoTerms.put(equalitySetID, setOfTerms);
-				}		
-			}
-
-			for(Entry<String, String> firstTermEntry : differentTermsURItoID.entrySet())
-			{
-				String firstEqualitySetID = firstTermEntry.getValue();
-				copyDifferentTerms.remove(firstTermEntry.getKey());
-				for(Entry<String, String> secondTermEntry : copyDifferentTerms.entrySet())
-				{
-					String[] allTerms = null;
-					String equalitySetID = null;
-					String secondEqualitySetID = secondTermEntry.getValue();					
-					if(!firstEqualitySetID.equals(secondEqualitySetID))
-					{
-						allTerms = (String[])ArrayUtils.addAll(IDtoTerms.get(firstEqualitySetID), IDtoTerms.get(secondEqualitySetID));						
-						equalitySetID = firstEqualitySetID+secondEqualitySetID;
-					}
-					else
-					{
-						allTerms = IDtoTerms.get(firstEqualitySetID);
-						equalitySetID = firstEqualitySetID;
-					}
-					EqualitySet EqSet = new EqualitySet(equalitySetID, allTerms, hdt, firstTermEntry.getKey(), secondTermEntry.getKey());
-					EqSet.addEdge(EqSet.term1ID, EqSet.term2ID);
-					//System.out.println(equalitySetID);
-					//System.out.println("Number of Edges in this Equality Set: " + EqSet.statementsCounter);
-					//System.out.println("Number of Distinct Edges in this Equality Set: " + EqSet.distinctStatementsCounter);
-					//System.out.println("Number of Reflexive Statements in this Equality Set: " + EqSet.reflexiveStatementsCounter);
-					//System.out.println("-----------------");
-					CommunityDetection cd = new CommunityDetection(inputLouvain, EqSet, equalitySetFile, f, allErrValues, EqSet.term1ID, EqSet.term2ID);
-					totalNumberOfCommunities = totalNumberOfCommunities + cd.numberOfCommunities;
-				}
-			}
-		}finally {
-			if (inputStream != null) {
-				try {
-					inputStream.close();
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-			}
-		}*/
-
 		int intra =0,inter =0;
 		
 		

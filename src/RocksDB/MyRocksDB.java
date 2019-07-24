@@ -14,7 +14,6 @@ import org.apache.commons.io.FileUtils;
 import org.apache.jena.ext.com.google.common.base.Utf8;
 import org.apache.jena.iri.IRI;
 import org.apache.jena.iri.IRIFactory;
-import org.apache.log4j.varia.ExternallyRolledFileAppender;
 import org.rdfhdt.hdt.hdt.HDT;
 import org.rocksdb.IngestExternalFileOptions;
 import org.rocksdb.Options;

@@ -344,10 +344,10 @@ public class ModularityOptimizer {
 		nNodes = clustering.getNNodes();
 
 		clustering.orderClustersByNNodes();
-		HashMap<Integer, ArrayList<Integer>> clusters = new HashMap<>();
+		HashMap<Integer, ArrayList<Integer>> clusters = new HashMap<Integer, ArrayList<Integer>>();
 		for(int c = 0 ; c < clustering.getNClusters(); c++)
 		{
-			clusters.put(c, new ArrayList<>());
+			clusters.put(c, new ArrayList<Integer>());
 		}
 
 		//bufferedWriter = new BufferedWriter(new FileWriter(fileName));
