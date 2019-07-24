@@ -1,6 +1,6 @@
 # LOD-Community-Detection
 
-This is the JAVA source code of our ISWC paper [Detecting Erroneous Identity Links on the Web using Network Metrics](https://www.cs.vu.nl/~frankh/postscript/ISWC2018.pdf).
+This is the JAVA source code of our 2018 ISWC paper [Detecting Erroneous Identity Links on the Web using Network Metrics](https://www.cs.vu.nl/~frankh/postscript/ISWC2018.pdf).
 
 #### Goal of the experiments:
 
