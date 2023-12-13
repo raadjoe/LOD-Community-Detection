@@ -1,4 +1,6 @@
-# LOD-Community-Detection
+# DEILUCS
+
+Detecting Erroneous Identity Links Using the Community Structure 
 
 This is the JAVA source code of our 2018 ISWC paper [Detecting Erroneous Identity Links on the Web using Network Metrics](https://www.cs.vu.nl/~frankh/postscript/ISWC2018.pdf).
 
